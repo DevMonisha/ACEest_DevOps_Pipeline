@@ -19,7 +19,7 @@ pipeline {
                 echo "Setting up virtual environment and dependencies..."
                 sh '''
                     python3 -m venv $PYTHON_ENV
-                    source $PYTHON_ENV/bin/activate
+                    . $PYTHON_ENV/bin/activate
                     pip install --upgrade pip
                     pip install -r requirements.txt
                 '''
@@ -30,7 +30,7 @@ pipeline {
             steps {
                 echo "Running Pytest unit tests..."
                 sh '''
-                    source $PYTHON_ENV/bin/activate
+                    . $PYTHON_ENV/bin/activate
                     pytest --maxfail=1 --disable-warnings -q
                 '''
             }
