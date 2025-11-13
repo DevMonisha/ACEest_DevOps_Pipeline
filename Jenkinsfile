@@ -4,6 +4,10 @@ pipeline {
     environment {
         APP_VERSION = "v1.3"
         PYTHON_ENV = "${WORKSPACE}/venv"
+
+        // 👇 Add SSL environment variables globally
+        SSL_CERT_FILE = "/etc/ssl/certs/ca-certificates.crt"
+        REQUESTS_CA_BUNDLE = "/etc/ssl/certs/ca-certificates.crt"
     }
 
     stages {
@@ -20,8 +24,13 @@ pipeline {
                 sh '''
                     python3 -m venv $PYTHON_ENV
                     . $PYTHON_ENV/bin/activate
+
+                    # Ensure system certificates are recognized
+                    export SSL_CERT_FILE=$SSL_CERT_FILE
+                    export REQUESTS_CA_BUNDLE=$REQUESTS_CA_BUNDLE
+
                     pip install --upgrade pip
-                    pip install -r requirements.txt
+                    pip install -r requirements.txt --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host=files.pythonhosted.org
                 '''
             }
         }
