@@ -1,15 +1,34 @@
 import pytest
+import os
 import tkinter as tk
 from app.ACEest_Fitness_V1_3 import FitnessTrackerApp
 
 @pytest.fixture
 def app_instance():
-    # create Tk root in headless mode
+    # Handle headless environment (like Jenkins)
+    if not os.environ.get("DISPLAY"):
+        import types
+        # mock tk.Tk() to avoid TclError in headless mode
+        tk.Tk = lambda: types.SimpleNamespace(
+            withdraw=lambda: None,
+            destroy=lambda: None,
+            title=lambda x: None
+        )
+
     root = tk.Tk()
-    root.withdraw()  # hide main window
+    try:
+        root.withdraw()  # hide main window if GUI exists
+    except AttributeError:
+        # in mocked Tk, withdraw does nothing
+        pass
+
     app = FitnessTrackerApp(root)
     yield app
-    root.destroy()
+
+    try:
+        root.destroy()
+    except AttributeError:
+        pass
 
 def test_bmi_bmr_calculation(app_instance):
     app = app_instance
