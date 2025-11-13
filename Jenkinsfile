@@ -36,9 +36,13 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                echo "Running Pytest unit tests..."
+                echo "Running Pytest unit tests in headless mode..."
                 sh '''
                     . $PYTHON_ENV/bin/activate
+                    # Start virtual display
+                    apt-get update && apt-get install -y xvfb
+                    Xvfb :99 -screen 0 1024x768x16 & 
+                    export DISPLAY=:99
                     pytest --maxfail=1 --disable-warnings -q
                 '''
             }
