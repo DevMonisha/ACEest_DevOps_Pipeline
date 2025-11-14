@@ -8,12 +8,13 @@ def app_instance():
     # Handle headless environment (like Jenkins)
     if not os.environ.get("DISPLAY"):
         import types
-        # mock tk.Tk() to avoid TclError in headless mode
+        # Mock tk.Tk() to avoid TclError in headless mode
         tk.Tk = lambda: types.SimpleNamespace(
             withdraw=lambda: None,
             destroy=lambda: None,
             title=lambda x: None,
-            geometry=lambda x: None  # <- add geometry
+            geometry=lambda x: None,
+            config=lambda **kwargs: None  # <- mock config
         )
 
     root = tk.Tk()
