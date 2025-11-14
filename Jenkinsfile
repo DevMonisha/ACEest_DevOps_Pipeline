@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'python:3.10-bullseye'
+            args '-u root'      // run as root
+        }
+    }
 
     environment {
         APP_VERSION = "v1.3"
@@ -17,20 +22,18 @@ pipeline {
             }
         }
 
-        stage('Install System Dependencies') {
+        stage('Install system dependencies') {
             steps {
-                echo "Installing Xvfb + Tk..."
+                echo "Installing Tkinter + Xvfb inside Docker agent..."
                 sh '''
-                    # Jenkins default user is root inside container → apt works
                     apt-get update
-                    apt-get install -y xvfb python3-tk xauth xfonts-base unzip
+                    apt-get install -y python3-tk xvfb xauth xfonts-base zip
                 '''
             }
         }
 
-        stage('Set up Python environment') {
+        stage('Set up Python venv') {
             steps {
-                echo "Creating venv and installing dependencies..."
                 sh '''
                     python3 -m venv venv
                     . venv/bin/activate
@@ -43,11 +46,11 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                echo "Running pytest in HEADLESS mode..."
+                echo "Running pytest in headless mode..."
                 sh '''
                     . venv/bin/activate
 
-                    # Start a virtual display for Tkinter tests
+                    # Start virtual display for Tkinter
                     Xvfb :99 -screen 0 1024x768x16 &
                     export DISPLAY=:99
 
