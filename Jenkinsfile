@@ -30,9 +30,15 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                echo "Running Pytest unit tests in headless mode..."
+                echo 'Running Pytest unit tests in headless mode...'
                 sh '''
-                    . $PYTHON_ENV/bin/activate
+                    . venv/bin/activate
+
+                    # Start Xvfb virtual display
+                    export DISPLAY=:99
+                    Xvfb :99 -screen 0 1024x768x16 &
+                    sleep 2
+
                     pytest --maxfail=1 --disable-warnings -q
                 '''
             }
