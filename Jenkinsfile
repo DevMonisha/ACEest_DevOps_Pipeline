@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'python:3.10-bullseye'   // includes python3
+            args '-u root'                 // allow apt-get install
+        }
+    }
 
     environment {
         APP_VERSION = "v1.3"
@@ -18,46 +23,47 @@ pipeline {
             }
         }
 
+        stage('Install System Dependencies') {
+            steps {
+                sh '''
+                    apt-get update
+                    apt-get install -y xvfb python3-tk xauth xfonts-base unzip
+                '''
+            }
+        }
+
         stage('Set up Python environment') {
             steps {
-                echo 'Setting up virtual environment and dependencies...'
                 sh '''
-                apt-get update
+                    python3 -m venv venv
+                    . venv/bin/activate
 
-                # Install Xvfb + GUI dependencies
-                apt-get install -y xvfb xauth xfonts-base python3-tk
-
-                python3 -m venv venv
-                . venv/bin/activate
-
-                pip install --upgrade pip
-                pip install -r requirements.txt --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
                 '''
             }
         }
 
         stage('Run Tests') {
             steps {
-                echo 'Running Pytest unit tests in headless mode...'
+                echo "Running pytest in headless mode..."
                 sh '''
-                . venv/bin/activate
+                    . venv/bin/activate
 
-                # Start virtual display
-                export DISPLAY=:99
-                Xvfb :99 -screen 0 1024x768x16 &
-                sleep 3
+                    # Start X virtual display for tkinter
+                    Xvfb :99 -screen 0 1024x768x16 &
+                    export DISPLAY=:99
 
-                pytest --maxfail=1 --disable-warnings -q
+                    pytest --maxfail=1 --disable-warnings -q
                 '''
             }
         }
 
         stage('Build Artifact') {
             steps {
-                echo "Packaging build artifacts..."
                 sh '''
-                mkdir -p build
-                zip -r build/ACEest_Fitness_${APP_VERSION}.zip app/ tests/ requirements.txt
+                    mkdir -p build
+                    zip -r build/ACEest_Fitness_${APP_VERSION}.zip app/ tests/ requirements.txt
                 '''
             }
         }
@@ -65,7 +71,6 @@ pipeline {
         stage('Archive Artifacts') {
             steps {
                 archiveArtifacts artifacts: 'build/*.zip', fingerprint: true
-                echo "Artifact archived successfully!"
             }
         }
     }

@@ -1,15 +1,33 @@
 import pytest
+import os
 import tkinter as tk
 from app.ACEest_Fitness_V1_3 import FitnessTrackerApp
 
 @pytest.fixture
 def app_instance():
-    """Create a real Tk instance (works in Jenkins with Xvfb)."""
+    # Handle headless Jenkins CI without DISPLAY
+    if not os.environ.get("DISPLAY"):
+        import types
+        # mock tk.Tk() in headless mode
+        tk.Tk = lambda: types.SimpleNamespace(
+            withdraw=lambda: None,
+            destroy=lambda: None,
+            title=lambda x: None
+        )
+
     root = tk.Tk()
-    root.withdraw()  # hide GUI window in headless mode
+    try:
+        root.withdraw()  # hide window if real Tk
+    except AttributeError:
+        pass
+
     app = FitnessTrackerApp(root)
     yield app
-    root.destroy()
+
+    try:
+        root.destroy()
+    except AttributeError:
+        pass
 
 
 def test_bmi_bmr_calculation(app_instance):
