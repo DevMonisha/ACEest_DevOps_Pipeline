@@ -12,15 +12,15 @@ def app_instance():
         tk.Tk = lambda: types.SimpleNamespace(
             withdraw=lambda: None,
             destroy=lambda: None,
-            title=lambda x: None
+            title=lambda x: None,
+            geometry=lambda x: None  # <- add geometry
         )
 
     root = tk.Tk()
     try:
         root.withdraw()  # hide main window if GUI exists
     except AttributeError:
-        # in mocked Tk, withdraw does nothing
-        pass
+        pass  # mocked Tk has no withdraw
 
     app = FitnessTrackerApp(root)
     yield app
