@@ -1,35 +1,16 @@
 import pytest
-import os
 import tkinter as tk
 from app.ACEest_Fitness_V1_3 import FitnessTrackerApp
 
 @pytest.fixture
 def app_instance():
-    # Handle headless environment (like Jenkins)
-    if not os.environ.get("DISPLAY"):
-        import types
-        # Mock tk.Tk() to avoid TclError in headless mode
-        tk.Tk = lambda: types.SimpleNamespace(
-            withdraw=lambda: None,
-            destroy=lambda: None,
-            title=lambda x: None,
-            geometry=lambda x: None,
-            config=lambda **kwargs: None  # <- mock config
-        )
-
+    """Create a real Tk instance (works in Jenkins with Xvfb)."""
     root = tk.Tk()
-    try:
-        root.withdraw()  # hide main window if GUI exists
-    except AttributeError:
-        pass  # mocked Tk has no withdraw
-
+    root.withdraw()  # hide GUI window in headless mode
     app = FitnessTrackerApp(root)
     yield app
+    root.destroy()
 
-    try:
-        root.destroy()
-    except AttributeError:
-        pass
 
 def test_bmi_bmr_calculation(app_instance):
     app = app_instance
@@ -45,6 +26,7 @@ def test_bmi_bmr_calculation(app_instance):
     assert "bmi" in app.user_info
     assert round(app.user_info["bmi"], 1) == pytest.approx(22.0, 0.1)
     assert app.user_info["bmr"] > 1000  # sanity check
+
 
 def test_add_workout_entry(app_instance):
     app = app_instance
