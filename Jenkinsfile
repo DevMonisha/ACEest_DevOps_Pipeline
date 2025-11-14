@@ -1,15 +1,9 @@
 pipeline {
-    agent {
-        docker {
-            image 'python:3.10-bullseye'   // includes python3
-            args '-u root'                 // allow apt-get install
-        }
-    }
+    agent any
 
     environment {
         APP_VERSION = "v1.3"
         PYTHON_ENV = "${WORKSPACE}/venv"
-
         SSL_CERT_FILE = "/etc/ssl/certs/ca-certificates.crt"
         REQUESTS_CA_BUNDLE = "/etc/ssl/certs/ca-certificates.crt"
     }
@@ -25,7 +19,9 @@ pipeline {
 
         stage('Install System Dependencies') {
             steps {
+                echo "Installing Xvfb + Tk..."
                 sh '''
+                    # Jenkins default user is root inside container → apt works
                     apt-get update
                     apt-get install -y xvfb python3-tk xauth xfonts-base unzip
                 '''
@@ -34,6 +30,7 @@ pipeline {
 
         stage('Set up Python environment') {
             steps {
+                echo "Creating venv and installing dependencies..."
                 sh '''
                     python3 -m venv venv
                     . venv/bin/activate
@@ -46,11 +43,11 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                echo "Running pytest in headless mode..."
+                echo "Running pytest in HEADLESS mode..."
                 sh '''
                     . venv/bin/activate
 
-                    # Start X virtual display for tkinter
+                    # Start a virtual display for Tkinter tests
                     Xvfb :99 -screen 0 1024x768x16 &
                     export DISPLAY=:99
 
@@ -77,10 +74,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ Build and test passed successfully!"
+            echo "✅ Build Successful!"
         }
         failure {
-            echo "❌ Build failed. Please check logs."
+            echo "❌ Build Failed!"
         }
     }
 }
